@@ -1,0 +1,136 @@
+#include <Arduino.h>
+#include <ESP32Servo.h>
+
+// Definición del pwm para la utilización del servo
+#define pwmChannel 0 
+#define freqPWM 3000
+
+//Deficinición de los canales de colores para los leds
+#define ledRChannel 1
+#define ledGChannel 2 
+#define ledBChannel 3 
+
+//Definición del pin del servo
+const int servo = 2; 
+Servo myservo;
+
+int posicion = 90; 
+int sumar = 15; 
+
+//Definición del pin de los botones
+const int button1 = 18; 
+const int button2 = 19; 
+const int button3 = 21; 
+const int button4 = 22; 
+
+//Definición del pin de leds
+const int greenLed = 27; 
+const int yellowLed = 26; 
+const int redLed = 25; 
+
+//Definición de contador
+volatile uint8_t contador1 = 1; 
+volatile int brillo = 0;
+
+int cambioservocolor = 0; //0: apagado; 1:verde; 2:amarillo; 3:rojo; 4:servo
+int cambioServo = 0;
+
+
+void setup() {
+  Serial.begin(115200);
+ 
+  myservo.attach(servo);
+  myservo.write(posicion);
+
+//Botones de entrada
+  pinMode(button1, INPUT_PULLUP);
+  pinMode(button2, INPUT_PULLUP); 
+  pinMode(button3, INPUT_PULLUP); 
+  pinMode(button4, INPUT_PULLUP); 
+
+//Leds como salida
+  pinMode(greenLed, OUTPUT); 
+  pinMode(yellowLed, OUTPUT);
+  pinMode(redLed, OUTPUT);
+}
+
+void loop() {
+  delay(100);
+
+//Uso de contador 
+  if(digitalRead(button3) == LOW){ 
+    contador1++; 
+    if(contador1 > 4){ 
+      contador1 = 1;
+    }
+    delay(500);
+  }
+
+//Uso del brillo de las leds 
+  if(digitalRead(button4) == LOW){
+    brillo += 50; 
+    if (brillo > 255){ 
+      brillo = 0;
+   }
+   delay(500); 
+  }
+
+
+//Coordinación de a que ángulo del servo se debe de prender los colores de las leds
+  if(contador1 == 1){  //verde en 0 grados
+    analogWrite(greenLed, 0);
+    analogWrite(yellowLed, brillo);
+    analogWrite(redLed, 0);
+    myservo.write(90); 
+    delay(200);
+  }
+
+  else if(contador1 == 2){ //amarillo a 90 grados
+    analogWrite(greenLed, 0);
+    analogWrite(yellowLed, brillo);
+    analogWrite(redLed, 0);
+    myservo.write(0); 
+    delay(200);
+  } 
+  
+  else if(contador1 == 3){ //rojo a 180 grados
+    analogWrite(greenLed, brillo);
+    analogWrite(yellowLed, 0);
+    analogWrite(redLed, 0);
+    myservo.write(180); 
+    delay(200);
+    }
+    
+  
+  else if(contador1 == 4){ //sin colores para la utilización del servo
+  analogWrite(greenLed, 0);
+  analogWrite(yellowLed, 0);
+  analogWrite(redLed, 0);
+   
+
+//Para determinar la posición correcta del servo al seleccionar los botones
+      if(digitalRead(button1) == HIGH){ 
+    posicion += 15; 
+    if(posicion > 180){ 
+      posicion = 180;
+    }
+    myservo.write(posicion);
+    delay(500);
+  }
+  if(digitalRead(button2) == HIGH){ 
+    posicion -= 15;
+    if(posicion < 0){ 
+      posicion = 0;
+    }
+    myservo.write(posicion);
+    delay(300);
+  } 
+  } 
+  
+  //Lectura correcta de los leds para su funcionamiento
+  else{
+    analogWrite(greenLed, 0);
+    analogWrite(yellowLed, 0);
+    analogWrite(redLed, 0);
+  }
+}
