@@ -1,0 +1,84 @@
+
+#include <Arduino.h>
+#include "driver/ledc.h"
+
+const int ButtonPinIncrement = 32; //Pin para boton 1
+const int ButtonPinDecrement = 33; //Pin para boton 2
+
+volatile bool incremento = true; //Para generar el movimiento
+volatile bool decremento = true; //Para generar el movimiento
+
+volatile int dutycicle = 90;
+
+void IRAM_ATTR ISR_1() {
+  incremento = false;
+}
+
+void IRAM_ATTR ISR_2() {
+  decremento = false;
+}
+
+ledc_channel_config_t channel_config; //PMW
+
+
+void setup() {
+  // Interrupciones de botones y resistencias internas
+  pinMode(ButtonPinIncrement, INPUT_PULLUP);
+  attachInterrupt(ButtonPinIncrement, ISR_1, FALLING);
+  pinMode(ButtonPinDecrement, INPUT_PULLUP);
+  attachInterrupt(ButtonPinDecrement, ISR_2, FALLING);
+
+
+//Configuración del PWM y timer
+  channel_config.gpio_num = 15;
+  channel_config.speed_mode = LEDC_HIGH_SPEED_MODE;
+  channel_config.channel = LEDC_CHANNEL_0;
+  channel_config.intr_type = LEDC_INTR_DISABLE;
+  channel_config.timer_sel = LEDC_TIMER_0;
+  channel_config.duty = 30;
+
+  ledc_channel_config(&channel_config); 
+  ledc_timer_config_t timer_config; 
+  ledc_timer_config(&timer_config);
+
+  timer_config.speed_mode = LEDC_HIGH_SPEED_MODE;
+  timer_config.duty_resolution = LEDC_TIMER_10_BIT;
+  timer_config.timer_num = LEDC_TIMER_0;
+  timer_config.freq_hz = 50; //Frecuencia
+
+ledc_timer_config(&timer_config);
+}
+
+void loop() {
+    if (!incremento) {
+    dutycicle = dutycicle +25;
+    
+      if (dutycicle >= 125) {   
+        dutycicle = 125; 
+        }
+      else{   
+        dutycicle = dutycicle; 
+        }
+    delay(200);
+    incremento = true;
+    }
+
+    if (!decremento) {
+    dutycicle = dutycicle - 25;
+      if (dutycicle <= 25) {   
+        dutycicle = 25; 
+        }
+      else{   
+        dutycicle = dutycicle; 
+        }
+    delay(200);
+    decremento = true;
+    }
+
+//Se actualiza el ciclo 
+ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, dutycicle );
+ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
+delay(2000);
+
+}
+
