@@ -1,0 +1,86 @@
+#Include <Arduino.h>
+
+//Definicion de leds
+const int redPin = 4;
+const int greenPin = 2;
+const int bluePin = 5;
+const int buttonColorPin = 18;
+const int buttonBrightnessPin = 19;
+
+//Definición de constante de color y brillo
+int selectedColor = 0;    
+int brightness = 0;
+int buttonColorPressCount = 0;
+
+bool increasing = true;
+bool lastButtonColorState = HIGH;
+bool lastButtonBrightnessState = HIGH;
+
+unsigned long lastDebounceTimeColor = 0;
+unsigned long lastDebounceTimeBrightness = 0;
+unsigned long debounceDelay = 50;
+
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  pinMode(buttonColorPin, INPUT_PULLUP);
+  pinMode(buttonBrightnessPin, INPUT_PULLUP);
+}
+
+void loop() {
+  int buttonColorState = digitalRead(buttonColorPin);
+  int buttonBrightnessState = digitalRead(buttonBrightnessPin);
+
+  if (buttonColorState != lastButtonColorState) {
+    lastDebounceTimeColor = millis();
+  }
+
+  if ((millis() - lastDebounceTimeColor) > debounceDelay) {
+    if (buttonColorState == LOW) {
+      buttonColorPressCount = (buttonColorPressCount + 1) % 4;
+      changeColor(buttonColorPressCount);
+      updateLED(); 
+    }
+  }
+
+//Cambio de brillo
+  if (buttonBrightnessState == LOW) {
+    if (increasing) {
+      brightness += 5;
+      if (brightness >= 255) {
+        brightness = 255;
+        increasing = false;
+      }
+    } else {
+      brightness -= 5;
+      if (brightness <= 0) {
+        brightness = 0;
+        increasing = true;
+      }
+    }
+  }
+
+  lastButtonColorState = buttonColorState;
+}
+
+//Cambio de led prendido
+void changeColor(int count) {
+  if (count == 0) {
+    selectedColor = 0;  // Red
+  } else if (count == 1) {
+    selectedColor = 1;  // Green
+  } else if (count == 2) {
+    selectedColor = 2;  // Blue
+  } else if (count == 3) {
+    selectedColor = 0;  // Restart to Red
+  }
+}
+
+//Para hacer que el codigo lea cual led debe prenderse
+void updateLED() {
+  analogWrite(redPin, selectedColor == 0 ? brightness : 0);
+  analogWrite(greenPin, selectedColor == 1 ? brightness : 0);
+  analogWrite(bluePin, selectedColor == 2 ? brightness : 0);
+}
